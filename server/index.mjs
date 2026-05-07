@@ -1,7 +1,15 @@
 import { createServer } from "node:http";
 
-const PORT = Number(process.env.NAMEFORGE_API_PORT ?? 8787);
+const PORT = Number(process.env.PORT ?? process.env.NAMEFORGE_API_PORT ?? 8787);
 const OPENAI_DEFAULT_ENDPOINT = "https://api.openai.com/v1";
+const allowedOrigins = new Set(
+  [
+    "http://127.0.0.1:5174",
+    "http://localhost:5174",
+    process.env.NAMEFORGE_WEB_ORIGIN,
+    process.env.FRONTEND_URL
+  ].filter(Boolean)
+);
 const providerEnvKeys = {
   Anthropic: "ANTHROPIC_API_KEY",
   "Google Gemini": "GEMINI_API_KEY",
@@ -29,8 +37,11 @@ const trademarkSources = [
 ];
 
 function writeJson(res, status, payload) {
+  const origin = res.req?.headers.origin;
+  const allowOrigin = origin && allowedOrigins.has(origin) ? origin : "http://127.0.0.1:5174";
   res.writeHead(status, {
-    "Access-Control-Allow-Origin": "http://127.0.0.1:5174",
+    "Access-Control-Allow-Origin": allowOrigin,
+    "Vary": "Origin",
     "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type,Authorization",
     "Content-Type": "application/json; charset=utf-8"
@@ -379,6 +390,6 @@ createServer((req, res) => {
       error: error.message || "Unexpected server error"
     });
   });
-}).listen(PORT, "127.0.0.1", () => {
-  console.log(`NameForge API ready on http://127.0.0.1:${PORT}`);
+}).listen(PORT, () => {
+  console.log(`NameForge API ready on port ${PORT}`);
 });

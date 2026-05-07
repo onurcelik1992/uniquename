@@ -169,7 +169,7 @@ const languagePresets = [
 ];
 
 const apiProviders = ["OpenAI uyumlu", "Anthropic", "Google Gemini", "Mistral", "Yerel model"];
-const API_BASE = "http://127.0.0.1:8787";
+const API_BASE = import.meta.env.VITE_NAMEFORGE_API_BASE || "http://127.0.0.1:8787";
 
 const turkishMap: Record<string, string> = {
   ç: "c",
