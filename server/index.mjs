@@ -120,7 +120,7 @@ function extractJson(text) {
 
 function buildNamingPrompt(payload) {
   const rootLines = (payload.roots ?? [])
-    .slice(0, 90)
+    .slice(0, 180)
     .map((root) => `- ${root.sound} | ${root.source} | ${root.meaning}`)
     .join("\n");
 
@@ -156,7 +156,7 @@ Kurallar:
 - Mevcut büyük markaları taklit etme.
 - Uzak durulacak kelimeleri kullanma.
 - Birleştirilecek isimler varsa 2'li veya 3'lü hece harmanlarını özellikle dene.
-- En az 12 aday üret.`;
+- En az 24 aday üret.`;
 }
 
 async function callOpenAiCompatible(payload) {
@@ -293,7 +293,7 @@ async function handleAiNames(payload) {
         tags: Array.isArray(candidate.tags) ? candidate.tags.map(String).slice(0, 5) : []
       }))
       .filter((candidate) => candidate.name.length >= 4)
-      .slice(0, 16)
+      .slice(0, 24)
   };
 }
 

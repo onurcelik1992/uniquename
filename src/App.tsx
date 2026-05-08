@@ -30,6 +30,7 @@ type Availability = "available" | "review" | "taken" | "unchecked";
 type Trademark = "clear" | "watch" | "conflict";
 type ApiMode = "local" | "live" | "fallback" | "error";
 type BlendMode = "2li" | "3lu" | "auto";
+type DomainFilter = "all" | "anyAvailable" | "comAvailable" | "unchecked" | "hideTaken";
 
 type Root = {
   sound: string;
@@ -113,6 +114,15 @@ const languageOptions: LanguageOption[] = [
   { id: "korean", label: "Korece", group: "Günümüz" },
   { id: "chinese", label: "Çince", group: "Günümüz" },
   { id: "swahili", label: "Svahili", group: "Günümüz" },
+  { id: "indonesian", label: "Endonezce", group: "Günümüz" },
+  { id: "vietnamese", label: "Vietnamca", group: "Günümüz" },
+  { id: "thai", label: "Tayca", group: "Günümüz" },
+  { id: "hebrew", label: "İbranice", group: "Günümüz" },
+  { id: "finnic", label: "Fince / Estonca", group: "Günümüz" },
+  { id: "basque", label: "Baskça", group: "Günümüz" },
+  { id: "gaelic", label: "İrlanda / Gal", group: "Günümüz" },
+  { id: "bantu", label: "Zulu / Bantu", group: "Günümüz" },
+  { id: "austronesian", label: "Maori / Tagalog", group: "Günümüz" },
   { id: "latin", label: "Latince", group: "Eski" },
   { id: "greek", label: "Yunanca", group: "Eski" },
   { id: "sanskrit", label: "Sanskrit", group: "Eski" },
@@ -137,6 +147,13 @@ const languageOptions: LanguageOption[] = [
 
 const extensionOptions = [".com", ".ai", ".io", ".co", ".app", ".com.tr"];
 const regionOptions = ["Türkiye", "ABD", "Avrupa"];
+const domainFilterOptions: { value: DomainFilter; label: string }[] = [
+  { value: "all", label: "Tümü" },
+  { value: "anyAvailable", label: "Boş domain var" },
+  { value: "comAvailable", label: ".com boş" },
+  { value: "hideTaken", label: "Dolu hariç" },
+  { value: "unchecked", label: "Kontrol bekleyen" }
+];
 
 const toneOptions = [
   "Global ve kısa",
@@ -305,6 +322,78 @@ const ROOTS: Record<string, Root[]> = {
     { sound: "amini", source: "Svahili", meaning: "güven" },
     { sound: "haraka", source: "Svahili", meaning: "hız" }
   ],
+  indonesian: [
+    { sound: "cahya", source: "Endonezce esin", meaning: "ışık" },
+    { sound: "bina", source: "Endonezce esin", meaning: "inşa, gelişim" },
+    { sound: "jaya", source: "Endonezce esin", meaning: "başarı" },
+    { sound: "rasa", source: "Endonezce", meaning: "his, tat" },
+    { sound: "daya", source: "Endonezce", meaning: "güç, kaynak" },
+    { sound: "laju", source: "Endonezce esin", meaning: "hızlı akış" }
+  ],
+  vietnamese: [
+    { sound: "minh", source: "Vietnamca esin", meaning: "parlak, zeki" },
+    { sound: "an", source: "Vietnamca esin", meaning: "huzur" },
+    { sound: "linh", source: "Vietnamca esin", meaning: "çevik ruh" },
+    { sound: "tam", source: "Vietnamca esin", meaning: "kalp, merkez" },
+    { sound: "viet", source: "Vietnamca esin", meaning: "aşan, geçen" },
+    { sound: "son", source: "Vietnamca esin", meaning: "dağ" }
+  ],
+  thai: [
+    { sound: "sabai", source: "Tayca esin", meaning: "rahatlık" },
+    { sound: "dao", source: "Tayca esin", meaning: "yıldız" },
+    { sound: "suk", source: "Tayca esin", meaning: "mutluluk" },
+    { sound: "chai", source: "Tayca esin", meaning: "zafer, kalp" },
+    { sound: "niran", source: "Tayca esin", meaning: "süreklilik" },
+    { sound: "mali", source: "Tayca esin", meaning: "çiçek" }
+  ],
+  hebrew: [
+    { sound: "or", source: "İbranice esin", meaning: "ışık" },
+    { sound: "lev", source: "İbranice esin", meaning: "kalp" },
+    { sound: "emet", source: "İbranice esin", meaning: "gerçek" },
+    { sound: "noa", source: "İbranice esin", meaning: "hareket, rahatlık" },
+    { sound: "ziv", source: "İbranice esin", meaning: "parıltı" },
+    { sound: "eden", source: "İbranice esin", meaning: "verim, keyif" }
+  ],
+  finnic: [
+    { sound: "valo", source: "Fince", meaning: "ışık" },
+    { sound: "sisu", source: "Fince", meaning: "direnç" },
+    { sound: "uusi", source: "Fince", meaning: "yeni" },
+    { sound: "meri", source: "Fince", meaning: "deniz" },
+    { sound: "tark", source: "Estonca esin", meaning: "akıllı" },
+    { sound: "laine", source: "Fince esin", meaning: "dalga" }
+  ],
+  basque: [
+    { sound: "argi", source: "Baskça esin", meaning: "ışık, açık" },
+    { sound: "bizi", source: "Baskça esin", meaning: "yaşam" },
+    { sound: "ondo", source: "Baskça esin", meaning: "iyi" },
+    { sound: "izar", source: "Baskça esin", meaning: "yıldız" },
+    { sound: "bide", source: "Baskça esin", meaning: "yol" },
+    { sound: "arin", source: "Baskça esin", meaning: "hafif, hızlı" }
+  ],
+  gaelic: [
+    { sound: "aon", source: "İrlanda esin", meaning: "birlik" },
+    { sound: "solas", source: "İrlanda esin", meaning: "ışık" },
+    { sound: "glas", source: "Kelt/Gal esin", meaning: "yeşil, canlı" },
+    { sound: "bryn", source: "Galce esin", meaning: "tepe" },
+    { sound: "cari", source: "Galce esin", meaning: "sevgi, yakınlık" },
+    { sound: "eira", source: "Galce esin", meaning: "saflık" }
+  ],
+  bantu: [
+    { sound: "ubuntu", source: "Bantu esin", meaning: "birlik, insanlık" },
+    { sound: "zola", source: "Zulu esin", meaning: "sakinlik" },
+    { sound: "langa", source: "Zulu esin", meaning: "güneş" },
+    { sound: "thula", source: "Zulu esin", meaning: "dinginlik" },
+    { sound: "kazi", source: "Bantu esin", meaning: "iş, üretim" },
+    { sound: "beka", source: "Bantu esin", meaning: "bakış, koruma" }
+  ],
+  austronesian: [
+    { sound: "mana", source: "Pasifik esin", meaning: "etki, güç" },
+    { sound: "aroha", source: "Maori esin", meaning: "sevgi" },
+    { sound: "moana", source: "Maori esin", meaning: "okyanus" },
+    { sound: "tala", source: "Tagalog esin", meaning: "yıldız" },
+    { sound: "liwa", source: "Tagalog esin", meaning: "ışık, alan" },
+    { sound: "malu", source: "Pasifik esin", meaning: "dingin koruma" }
+  ],
   latin: [
     { sound: "luma", source: "Latince", meaning: "ışık" },
     { sound: "vera", source: "Latince", meaning: "doğru, gerçek" },
@@ -471,6 +560,69 @@ const ROOTS: Record<string, Root[]> = {
   ]
 };
 
+const semanticRootBank: Root[] = [
+  { sound: "aero", source: "Evrensel kök", meaning: "hava, hareket" },
+  { sound: "alma", source: "Evrensel kök", meaning: "öz, ruh" },
+  { sound: "alto", source: "Evrensel kök", meaning: "yükseklik" },
+  { sound: "argo", source: "Evrensel kök", meaning: "yolculuk, taşıma" },
+  { sound: "aria", source: "Evrensel kök", meaning: "ses, açıklık" },
+  { sound: "atlas", source: "Evrensel kök", meaning: "kapsam, harita" },
+  { sound: "aura", source: "Evrensel kök", meaning: "etki alanı" },
+  { sound: "bloom", source: "Evrensel kök", meaning: "büyüme" },
+  { sound: "brio", source: "Evrensel kök", meaning: "canlı enerji" },
+  { sound: "canto", source: "Evrensel kök", meaning: "ses, ritim" },
+  { sound: "certa", source: "Evrensel kök", meaning: "kesinlik" },
+  { sound: "cora", source: "Evrensel kök", meaning: "kalp, çekirdek" },
+  { sound: "dawn", source: "Evrensel kök", meaning: "başlangıç" },
+  { sound: "echo", source: "Evrensel kök", meaning: "yansıma, akılda kalma" },
+  { sound: "elev", source: "Evrensel kök", meaning: "yükseltme" },
+  { sound: "ember", source: "Evrensel kök", meaning: "canlı kıvılcım" },
+  { sound: "ever", source: "Evrensel kök", meaning: "süreklilik" },
+  { sound: "flow", source: "Evrensel kök", meaning: "akış" },
+  { sound: "forge", source: "Evrensel kök", meaning: "üretim, şekillendirme" },
+  { sound: "gala", source: "Evrensel kök", meaning: "parlak buluşma" },
+  { sound: "glow", source: "Evrensel kök", meaning: "parlama" },
+  { sound: "haven", source: "Evrensel kök", meaning: "güvenli alan" },
+  { sound: "hira", source: "Evrensel kök", meaning: "ince parıltı" },
+  { sound: "ion", source: "Evrensel kök", meaning: "enerji parçacığı" },
+  { sound: "juno", source: "Evrensel kök", meaning: "soylu koruma" },
+  { sound: "kairo", source: "Evrensel kök", meaning: "doğru an" },
+  { sound: "kin", source: "Evrensel kök", meaning: "yakınlık, bağ" },
+  { sound: "lattice", source: "Evrensel kök", meaning: "örgü, ağ" },
+  { sound: "lumen", source: "Evrensel kök", meaning: "ışık ölçüsü" },
+  { sound: "maven", source: "Evrensel kök", meaning: "uzmanlık" },
+  { sound: "mira", source: "Evrensel kök", meaning: "bakış, hayranlık" },
+  { sound: "nexus", source: "Evrensel kök", meaning: "bağlantı merkezi" },
+  { sound: "nova", source: "Evrensel kök", meaning: "yeni patlama" },
+  { sound: "nuri", source: "Evrensel kök", meaning: "ışık hissi" },
+  { sound: "omni", source: "Evrensel kök", meaning: "kapsayıcılık" },
+  { sound: "orbit", source: "Evrensel kök", meaning: "döngü, alan" },
+  { sound: "prism", source: "Evrensel kök", meaning: "çoklu bakış" },
+  { sound: "pulse", source: "Evrensel kök", meaning: "ritim, canlılık" },
+  { sound: "quali", source: "Evrensel kök", meaning: "nitelik" },
+  { sound: "rally", source: "Evrensel kök", meaning: "toplanma, enerji" },
+  { sound: "raya", source: "Evrensel kök", meaning: "ışın, yön" },
+  { sound: "relay", source: "Evrensel kök", meaning: "aktarma, hız" },
+  { sound: "rise", source: "Evrensel kök", meaning: "yükseliş" },
+  { sound: "safra", source: "Evrensel kök", meaning: "berraklık" },
+  { sound: "signal", source: "Evrensel kök", meaning: "işaret, iletişim" },
+  { sound: "soma", source: "Evrensel kök", meaning: "öz, beden" },
+  { sound: "spire", source: "Evrensel kök", meaning: "zirve" },
+  { sound: "stride", source: "Evrensel kök", meaning: "ilerleme" },
+  { sound: "terra", source: "Evrensel kök", meaning: "zemin, dünya" },
+  { sound: "thrive", source: "Evrensel kök", meaning: "serpilme" },
+  { sound: "tide", source: "Evrensel kök", meaning: "dalga, ivme" },
+  { sound: "true", source: "Evrensel kök", meaning: "doğruluk" },
+  { sound: "valen", source: "Evrensel kök", meaning: "güç, değer" },
+  { sound: "vanta", source: "Evrensel kök", meaning: "derin alan" },
+  { sound: "vector", source: "Evrensel kök", meaning: "yönlü hareket" },
+  { sound: "velar", source: "Evrensel kök", meaning: "yumuşak hız" },
+  { sound: "vivid", source: "Evrensel kök", meaning: "canlı açıklık" },
+  { sound: "way", source: "Evrensel kök", meaning: "yol" },
+  { sound: "zen", source: "Evrensel kök", meaning: "sadelik, denge" },
+  { sound: "zest", source: "Evrensel kök", meaning: "iştah, enerji" }
+];
+
 const suffixes = [
   "a",
   "o",
@@ -489,7 +641,30 @@ const suffixes = [
   "yx",
   "ivo",
   "ara",
-  "iqo"
+  "iqo",
+  "era",
+  "via",
+  "lo",
+  "li",
+  "mo",
+  "za",
+  "ko",
+  "ta",
+  "ya",
+  "on",
+  "os",
+  "al",
+  "io",
+  "iva",
+  "ora",
+  "zen",
+  "ora",
+  "neo",
+  "vex",
+  "vox",
+  "nix",
+  "sol",
+  "lum"
 ];
 
 function hashValue(input: string) {
@@ -816,7 +991,7 @@ function generateCandidates({
   useBackendKey: boolean;
 }): Candidate[] {
   const activeLanguages = languages.length ? languages : ["turkic", "latin", "invented", "cyber"];
-  const roots = activeLanguages.flatMap((language) => ROOTS[language] ?? []);
+  const roots = rootsForLanguages(activeLanguages);
   const inputNameRoots = nameRootsFromBlendInput(blendInput);
   const enrichedRoots = [...sectorRoots(`${sector} ${keywords}`), ...inputNameRoots, ...roots];
   const blocked = avoid
@@ -840,7 +1015,7 @@ function generateCandidates({
   }).filter((candidate) => !blocked.some((word) => candidate.name.toLowerCase().includes(word)));
   candidates.forEach((candidate) => seen.add(candidate.name));
 
-  while (candidates.length < 16) {
+  while (candidates.length < 24) {
     const first = pick(enrichedRoots, rng);
     const second = pick(enrichedRoots, rng);
     let name = blendRoots(first, second, rng, lengthMode);
@@ -913,9 +1088,28 @@ function trademarkMeta(status: Trademark) {
   return { label: "Çakışma", className: "bad" };
 }
 
+function candidateMatchesDomainFilter(candidate: Candidate, filter: DomainFilter) {
+  const statuses = Object.values(candidate.domains);
+  if (filter === "anyAvailable") return statuses.includes("available");
+  if (filter === "comAvailable") return candidate.domains[".com"] === "available";
+  if (filter === "unchecked") return statuses.includes("unchecked");
+  if (filter === "hideTaken") return statuses.every((status) => status !== "taken");
+  return true;
+}
+
+function uniqueRoots(roots: Root[]) {
+  return roots.filter(
+    (root, index, arr) =>
+      arr.findIndex((other) => other.sound.toLowerCase() === root.sound.toLowerCase()) === index
+  );
+}
+
 function rootsForLanguages(languages: string[]) {
   const activeLanguages = languages.length ? languages : ["turkic", "latin", "invented", "cyber"];
-  return activeLanguages.flatMap((language) => ROOTS[language] ?? []);
+  return uniqueRoots([
+    ...activeLanguages.flatMap((language) => ROOTS[language] ?? []),
+    ...semanticRootBank
+  ]);
 }
 
 function candidateFromAi(
@@ -1042,16 +1236,7 @@ function App({ clerkEnabled = false }: AppProps) {
   const [pulse, setPulse] = useState("Keşif");
   const [lengthMode, setLengthMode] = useState("Kısa");
   const [risk, setRisk] = useState(42);
-  const [languages, setLanguages] = useState([
-    "turkic",
-    "english",
-    "latin",
-    "greek",
-    "nahuatl",
-    "mayan",
-    "invented",
-    "cyber"
-  ]);
+  const [languages, setLanguages] = useState(() => languageOptions.map((option) => option.id));
   const [extensions, setExtensions] = useState([".com", ".ai", ".io"]);
   const [regions, setRegions] = useState(["Türkiye", "ABD", "Avrupa"]);
   const [aiContextMode, setAiContextMode] = useState(true);
@@ -1067,6 +1252,7 @@ function App({ clerkEnabled = false }: AppProps) {
   const [domainOverrides, setDomainOverrides] = useState<Record<string, Record<string, Availability>>>({});
   const [domainStatusText, setDomainStatusText] = useState(DOMAIN_PENDING_TEXT);
   const [isCheckingDomains, setIsCheckingDomains] = useState(false);
+  const [domainFilter, setDomainFilter] = useState<DomainFilter>("all");
   const [round, setRound] = useState(1);
   const [saved, setSaved] = useState<Record<string, Candidate>>(() => {
     try {
@@ -1145,15 +1331,21 @@ function App({ clerkEnabled = false }: AppProps) {
       ].join("::"),
     [candidates, extensions]
   );
+  const filteredCandidates = useMemo(
+    () => candidatesWithDomains.filter((candidate) => candidateMatchesDomainFilter(candidate, domainFilter)),
+    [candidatesWithDomains, domainFilter]
+  );
 
   const savedItems = Object.values(saved);
-  const bestScore = Math.max(...candidatesWithDomains.map((candidate) => candidate.score));
-  const openDomainCount = candidatesWithDomains.reduce(
+  const bestScore = filteredCandidates.length
+    ? Math.max(...filteredCandidates.map((candidate) => candidate.score))
+    : 0;
+  const openDomainCount = filteredCandidates.reduce(
     (total, candidate) =>
       total + Object.values(candidate.domains).filter((status) => status === "available").length,
     0
   );
-  const clearTrademarkCount = candidatesWithDomains.reduce(
+  const clearTrademarkCount = filteredCandidates.reduce(
     (total, candidate) =>
       total + Object.values(candidate.trademarks).filter((status) => status === "clear").length,
     0
@@ -1735,7 +1927,7 @@ function App({ clerkEnabled = false }: AppProps) {
             <div className="results-header">
               <div>
                 <span className="eyebrow">AI adayları</span>
-                <h2>Özgün isim havuzu</h2>
+                <h2>Özgün isim havuzu ({filteredCandidates.length}/{candidatesWithDomains.length})</h2>
               </div>
               <div className="header-actions">
                 <button
@@ -1764,8 +1956,27 @@ function App({ clerkEnabled = false }: AppProps) {
             </div>
             <p className="source-line">{domainStatusText}</p>
 
+            <div className="filter-panel" aria-label="Domain sonuç filtresi">
+              <div className="filter-title">
+                <SlidersHorizontal size={16} />
+                <span>Domain filtresi</span>
+              </div>
+              <div className="filter-actions">
+                {domainFilterOptions.map((option) => (
+                  <button
+                    className={domainFilter === option.value ? "active" : ""}
+                    key={option.value}
+                    onClick={() => setDomainFilter(option.value)}
+                    type="button"
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="name-grid">
-              {candidatesWithDomains.map((candidate) => (
+              {filteredCandidates.map((candidate) => (
                 <article className="name-card" key={candidate.name}>
                   <div className="card-topline">
                     <div>
@@ -1844,6 +2055,13 @@ function App({ clerkEnabled = false }: AppProps) {
                 </article>
               ))}
             </div>
+            {filteredCandidates.length === 0 ? (
+              <div className="results-empty">
+                <Search size={21} />
+                <span>Bu filtrede sonuç yok</span>
+                <p>RDAP kontrolü bitince veya farklı uzantı seçince liste yeniden dolar.</p>
+              </div>
+            ) : null}
           </section>
 
           <aside className="shortlist-panel">

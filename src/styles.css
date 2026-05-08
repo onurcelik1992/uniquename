@@ -638,6 +638,53 @@ select:focus {
   line-height: 1.4;
 }
 
+.filter-panel {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  min-width: 0;
+  padding: 10px;
+}
+
+.filter-title {
+  align-items: center;
+  color: var(--muted);
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 0.78rem;
+  font-weight: 850;
+  gap: 7px;
+}
+
+.filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.filter-actions button {
+  background: var(--surface-strong);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 0.76rem;
+  font-weight: 820;
+  min-height: 32px;
+  padding: 0 9px;
+}
+
+.filter-actions button.active {
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  color: var(--accent-strong);
+}
+
 .primary-action,
 .secondary-action,
 .ghost-action {
@@ -913,6 +960,29 @@ h3 {
   text-align: center;
 }
 
+.results-empty {
+  align-items: center;
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  color: var(--muted);
+  display: grid;
+  gap: 8px;
+  min-height: 132px;
+  place-items: center;
+  text-align: center;
+}
+
+.results-empty span {
+  color: var(--text);
+  font-weight: 850;
+}
+
+.results-empty p {
+  font-size: 0.84rem;
+  max-width: 360px;
+}
+
 .saved-row {
   align-items: center;
   background: var(--surface-soft);
@@ -1030,6 +1100,15 @@ a.integration-row:hover {
 
   .results-header {
     align-items: start;
+  }
+
+  .filter-panel {
+    align-items: flex-start;
+    display: grid;
+  }
+
+  .filter-actions {
+    justify-content: flex-start;
   }
 }
 
