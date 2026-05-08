@@ -1137,6 +1137,14 @@ function App({ clerkEnabled = false }: AppProps) {
       })),
     [candidates, domainOverrides]
   );
+  const domainCheckSignature = useMemo(
+    () =>
+      [
+        candidates.map((candidate) => candidate.name).join("|"),
+        extensions.join("|")
+      ].join("::"),
+    [candidates, extensions]
+  );
 
   const savedItems = Object.values(saved);
   const bestScore = Math.max(...candidatesWithDomains.map((candidate) => candidate.score));
@@ -1274,38 +1282,76 @@ function App({ clerkEnabled = false }: AppProps) {
     }
   }
 
-  async function handleLiveDomainCheck() {
+  async function runLiveDomainCheck(
+    targetCandidates: Candidate[],
+    mode: "auto" | "manual" = "manual",
+    signal?: AbortSignal
+  ) {
     if (!extensions.length) {
       setDomainStatusText("Önce en az bir domain uzantısı seç.");
       return;
     }
+    if (!targetCandidates.length) {
+      setDomainStatusText("Kontrol edilecek isim yok.");
+      return;
+    }
     setIsCheckingDomains(true);
-    setDomainStatusText("RDAP canlı domain kontrolü çalışıyor...");
+    setDomainStatusText(
+      mode === "auto"
+        ? "Domainler resmi RDAP servisleriyle otomatik kontrol ediliyor..."
+        : "RDAP canlı domain kontrolü yenileniyor..."
+    );
     try {
       const response = await fetch(`${API_BASE}/api/domain-check`, {
         method: "POST",
+        signal,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          names: candidates.map((candidate) => candidate.name),
+          names: targetCandidates.map((candidate) => candidate.name),
           extensions
         })
       });
       const payload = await response.json();
+      if (signal?.aborted) return;
       if (!response.ok) {
         throw new Error(payload.error || "Domain endpoint hata verdi");
       }
       setDomainOverrides(payload.results ?? {});
-      setDomainStatusText(payload.message || "RDAP canlı domain kontrolü tamamlandı.");
+      setDomainStatusText(
+        `${payload.message || "RDAP canlı domain kontrolü tamamlandı."} ${
+          targetCandidates.length * extensions.length
+        } domain kontrol edildi.`
+      );
     } catch (error) {
+      if (signal?.aborted) return;
       setDomainStatusText(
         `Canlı domain kontrolü başarısız; domainler kontrol bekliyor. ${
           error instanceof Error ? error.message : "Bilinmeyen hata"
         }`
       );
     } finally {
-      setIsCheckingDomains(false);
+      if (!signal?.aborted) {
+        setIsCheckingDomains(false);
+      }
     }
   }
+
+  async function handleLiveDomainCheck() {
+    await runLiveDomainCheck(candidates, "manual");
+  }
+
+  useEffect(() => {
+    if (!domainCheckSignature || !candidates.length || !extensions.length) return;
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      void runLiveDomainCheck(candidates, "auto", controller.signal);
+    }, 250);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [domainCheckSignature]);
 
   function toggleSaved(candidate: Candidate) {
     setSaved((current) => {
@@ -1699,7 +1745,7 @@ function App({ clerkEnabled = false }: AppProps) {
                   type="button"
                 >
                   <Globe size={17} />
-                  {isCheckingDomains ? "Kontrol..." : "RDAP canlı"}
+                  {isCheckingDomains ? "Kontrol..." : "RDAP yenile"}
                 </button>
                 <button
                   className="ghost-action"

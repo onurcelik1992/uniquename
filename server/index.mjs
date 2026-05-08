@@ -2,6 +2,9 @@ import { createServer } from "node:http";
 
 const PORT = Number(process.env.PORT ?? process.env.NAMEFORGE_API_PORT ?? 8787);
 const OPENAI_DEFAULT_ENDPOINT = "https://api.openai.com/v1";
+const RDAP_BOOTSTRAP_URL = "https://data.iana.org/rdap/dns.json";
+const RDAP_TIMEOUT_MS = Number(process.env.RDAP_TIMEOUT_MS ?? 9000);
+const RDAP_CONCURRENCY = Number(process.env.RDAP_CONCURRENCY ?? 6);
 const allowedOrigins = new Set(
   [
     "http://127.0.0.1:5174",
@@ -10,6 +13,7 @@ const allowedOrigins = new Set(
     process.env.FRONTEND_URL
   ].filter(Boolean)
 );
+let rdapBootstrapCache = null;
 const providerEnvKeys = {
   Anthropic: "ANTHROPIC_API_KEY",
   "Google Gemini": "GEMINI_API_KEY",
@@ -293,11 +297,41 @@ async function handleAiNames(payload) {
   };
 }
 
-async function rdapStatus(domain) {
+async function rdapBootstrap() {
+  if (!rdapBootstrapCache) {
+    rdapBootstrapCache = fetch(RDAP_BOOTSTRAP_URL, {
+      headers: { Accept: "application/json" }
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error(`IANA RDAP bootstrap returned ${response.status}`);
+        return response.json();
+      })
+      .catch(() => ({ services: [] }));
+  }
+  return rdapBootstrapCache;
+}
+
+function tldFromDomain(domain) {
+  return String(domain).split(".").filter(Boolean).at(-1)?.toLowerCase() ?? "";
+}
+
+async function rdapUrlsForDomain(domain) {
+  const tld = tldFromDomain(domain);
+  const bootstrap = await rdapBootstrap();
+  const service = Array.isArray(bootstrap.services)
+    ? bootstrap.services.find(([tlds]) => Array.isArray(tlds) && tlds.includes(tld))
+    : null;
+  const officialUrls = Array.isArray(service?.[1]) ? service[1] : [];
+  const urls = officialUrls.map((baseUrl) => `${String(baseUrl).replace(/\/+$/, "")}/domain/${domain}`);
+  urls.push(`https://rdap.org/domain/${domain}`);
+  return urls.filter((url, index, list) => list.indexOf(url) === index);
+}
+
+async function fetchRdapStatus(url) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 7000);
+  const timeout = setTimeout(() => controller.abort(), RDAP_TIMEOUT_MS);
   try {
-    const response = await fetch(`https://rdap.org/domain/${domain}`, {
+    const response = await fetch(url, {
       signal: controller.signal,
       redirect: "follow",
       headers: {
@@ -314,10 +348,38 @@ async function rdapStatus(domain) {
   }
 }
 
+async function rdapStatus(domain) {
+  const urls = await rdapUrlsForDomain(domain);
+  let lastStatus = "review";
+  for (const url of urls) {
+    const status = await fetchRdapStatus(url);
+    if (status === "available" || status === "taken") {
+      return status;
+    }
+    lastStatus = status;
+  }
+  return lastStatus;
+}
+
+async function mapWithConcurrency(items, limit, mapper) {
+  let index = 0;
+  const workerCount = Math.max(1, Math.min(limit, items.length));
+  await Promise.all(
+    Array.from({ length: workerCount }, async () => {
+      while (index < items.length) {
+        const currentIndex = index;
+        index += 1;
+        await mapper(items[currentIndex], currentIndex);
+      }
+    })
+  );
+}
+
 async function handleDomainCheck(payload) {
   const names = Array.isArray(payload.names) ? payload.names.slice(0, 24) : [];
   const extensions = Array.isArray(payload.extensions) ? payload.extensions.slice(0, 8) : [];
   const results = {};
+  const checks = [];
 
   for (const rawName of names) {
     const name = sanitizeName(rawName);
@@ -329,13 +391,18 @@ async function handleDomainCheck(payload) {
         results[rawName][extension] = "review";
         continue;
       }
-      results[rawName][extension] = await rdapStatus(`${name}.${ext}`);
+      results[rawName][extension] = "review";
+      checks.push({ rawName, extension, domain: `${name}.${ext}` });
     }
   }
 
+  await mapWithConcurrency(checks, RDAP_CONCURRENCY, async ({ rawName, extension, domain }) => {
+    results[rawName][extension] = await rdapStatus(domain);
+  });
+
   return {
     mode: "live",
-    message: "RDAP üstünden canlı domain ön kontrolü yapıldı.",
+    message: "Resmi RDAP servisleri üstünden canlı domain ön kontrolü yapıldı.",
     results
   };
 }
