@@ -564,6 +564,21 @@ select:focus {
   gap: 7px;
 }
 
+.sector-signal-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.sector-signal-row span {
+  background: var(--accent-soft);
+  border-radius: 999px;
+  color: var(--accent-strong);
+  font-size: 0.72rem;
+  font-weight: 820;
+  padding: 7px 8px;
+}
+
 .mini-pills button {
   border: 1px solid var(--border);
   min-height: 32px;
@@ -870,6 +885,21 @@ h3 {
   border-radius: inherit;
   display: block;
   height: 100%;
+}
+
+.score-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.score-breakdown span {
+  background: var(--surface-soft);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 820;
+  padding: 6px 7px;
 }
 
 .status-table {

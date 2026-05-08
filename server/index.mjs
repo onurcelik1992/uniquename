@@ -128,6 +128,7 @@ function buildNamingPrompt(payload) {
 Yeni, tescile aday, kısa, global okunabilir marka isimleri üret.
 
 Sektör: ${payload.sector}
+Sektör kategorisi: ${payload.sectorCategory || "Genel"}
 Çağrışımlar: ${payload.keywords}
 Birleştirilecek isimler/kelimeler: ${payload.blendInput || "Yok"}
 Birleştirme modu: ${payload.blendMode || "auto"}
@@ -278,6 +279,7 @@ Etiketler: ${(candidate.tags ?? []).join(", ")}
 Domain sinyali: ${domainLines || "Kontrol bekliyor"}
 Tescil sinyali: ${trademarkLines || "Kontrol bekliyor"}
 Sektör: ${payload.sector}
+Sektör kategorisi: ${payload.sectorCategory || "Genel"}
 Çağrışımlar: ${payload.keywords}
 Ton: ${payload.tone}
 Duygu: ${payload.pulse}

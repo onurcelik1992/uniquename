@@ -43,6 +43,22 @@ type BrandStory = {
   socialBio: string;
 };
 
+type SectorCategory = {
+  id: string;
+  label: string;
+  signals: string[];
+  roots: Root[];
+};
+
+type BrandScore = {
+  total: number;
+  recall: number;
+  sectorFit: number;
+  domain: number;
+  trademark: number;
+  story: number;
+};
+
 type Root = {
   sound: string;
   source: string;
@@ -165,6 +181,279 @@ const domainFilterOptions: { value: DomainFilter; label: string }[] = [
   { value: "comAvailable", label: ".com boş" },
   { value: "hideTaken", label: "Dolu hariç" },
   { value: "unchecked", label: "Kontrol bekleyen" }
+];
+
+const sectorCategories: SectorCategory[] = [
+  {
+    id: "ai-saas",
+    label: "AI / SaaS / Yazılım",
+    signals: ["zeka", "otomasyon", "platform", "verimlilik"],
+    roots: [
+      { sound: "syn", source: "Sektör: AI", meaning: "sentez" },
+      { sound: "nexa", source: "Sektör: SaaS", meaning: "bağlantı" },
+      { sound: "logic", source: "Sektör: Yazılım", meaning: "akıl yürütme" }
+    ]
+  },
+  {
+    id: "fintech",
+    label: "Fintech / Bankacılık / Ödeme",
+    signals: ["güven", "değer", "akış", "cüzdan"],
+    roots: [
+      { sound: "valo", source: "Sektör: Finans", meaning: "değer" },
+      { sound: "mint", source: "Sektör: Fintech", meaning: "para, tazelik" },
+      { sound: "ledger", source: "Sektör: Finans", meaning: "kayıt, güven" }
+    ]
+  },
+  {
+    id: "ecommerce",
+    label: "E-ticaret / Marketplace",
+    signals: ["sepet", "keşif", "pazar", "hız"],
+    roots: [
+      { sound: "cart", source: "Sektör: E-ticaret", meaning: "sepet" },
+      { sound: "bazaar", source: "Sektör: Pazar", meaning: "pazar yeri" },
+      { sound: "swift", source: "Sektör: E-ticaret", meaning: "hızlı alışveriş" }
+    ]
+  },
+  {
+    id: "health",
+    label: "Sağlık / Wellness / Medikal",
+    signals: ["denge", "güven", "bakım", "yaşam"],
+    roots: [
+      { sound: "vita", source: "Sektör: Sağlık", meaning: "yaşam" },
+      { sound: "cura", source: "Sektör: Bakım", meaning: "özen" },
+      { sound: "nora", source: "Sektör: Wellness", meaning: "denge" }
+    ]
+  },
+  {
+    id: "beauty",
+    label: "Güzellik / Kozmetik / Bakım",
+    signals: ["ışıltı", "zarafet", "ritüel", "doku"],
+    roots: [
+      { sound: "glow", source: "Sektör: Güzellik", meaning: "ışıltı" },
+      { sound: "velvet", source: "Sektör: Kozmetik", meaning: "yumuşak doku" },
+      { sound: "aura", source: "Sektör: Bakım", meaning: "etki alanı" }
+    ]
+  },
+  {
+    id: "food",
+    label: "Yeme İçme / Gıda / Restoran",
+    signals: ["tat", "ritüel", "tazelik", "sofra"],
+    roots: [
+      { sound: "savor", source: "Sektör: Gıda", meaning: "tat" },
+      { sound: "mesa", source: "Sektör: Restoran", meaning: "masa, sofra" },
+      { sound: "fresh", source: "Sektör: Gıda", meaning: "tazelik" }
+    ]
+  },
+  {
+    id: "coffee",
+    label: "Kahve / Cafe / İçecek",
+    signals: ["kavurma", "ritüel", "aroma", "buluşma"],
+    roots: [
+      { sound: "kava", source: "Sektör: Kahve", meaning: "kahve ritüeli" },
+      { sound: "roa", source: "Sektör: Kavurma", meaning: "kavurma" },
+      { sound: "aroma", source: "Sektör: İçecek", meaning: "koku, tat" }
+    ]
+  },
+  {
+    id: "fashion",
+    label: "Moda / Tekstil / Aksesuar",
+    signals: ["stil", "doku", "zarafet", "koleksiyon"],
+    roots: [
+      { sound: "mode", source: "Sektör: Moda", meaning: "stil" },
+      { sound: "weave", source: "Sektör: Tekstil", meaning: "dokuma" },
+      { sound: "linea", source: "Sektör: Tasarım", meaning: "çizgi" }
+    ]
+  },
+  {
+    id: "education",
+    label: "Eğitim / Kurs / EdTech",
+    signals: ["öğrenme", "yol", "bilgi", "gelişim"],
+    roots: [
+      { sound: "learn", source: "Sektör: Eğitim", meaning: "öğrenme" },
+      { sound: "veda", source: "Sektör: Bilgi", meaning: "bilgi" },
+      { sound: "path", source: "Sektör: Eğitim", meaning: "öğrenme yolu" }
+    ]
+  },
+  {
+    id: "gaming",
+    label: "Oyun / Espor / Eğlence",
+    signals: ["enerji", "seviye", "oyun", "topluluk"],
+    roots: [
+      { sound: "play", source: "Sektör: Oyun", meaning: "oyun" },
+      { sound: "level", source: "Sektör: Gaming", meaning: "seviye" },
+      { sound: "guild", source: "Sektör: Topluluk", meaning: "ekip" }
+    ]
+  },
+  {
+    id: "travel",
+    label: "Turizm / Seyahat / Otel",
+    signals: ["rota", "deneyim", "konaklama", "keşif"],
+    roots: [
+      { sound: "roam", source: "Sektör: Seyahat", meaning: "gezmek" },
+      { sound: "vista", source: "Sektör: Turizm", meaning: "manzara" },
+      { sound: "haven", source: "Sektör: Otel", meaning: "güvenli durak" }
+    ]
+  },
+  {
+    id: "real-estate",
+    label: "Emlak / İnşaat / Mimari",
+    signals: ["alan", "güven", "yapı", "değer"],
+    roots: [
+      { sound: "terra", source: "Sektör: Emlak", meaning: "zemin" },
+      { sound: "arca", source: "Sektör: Mimari", meaning: "güvenli yapı" },
+      { sound: "build", source: "Sektör: İnşaat", meaning: "inşa" }
+    ]
+  },
+  {
+    id: "logistics",
+    label: "Lojistik / Teslimat / Mobilite",
+    signals: ["rota", "hız", "akış", "teslimat"],
+    roots: [
+      { sound: "route", source: "Sektör: Lojistik", meaning: "rota" },
+      { sound: "relay", source: "Sektör: Teslimat", meaning: "aktarma" },
+      { sound: "cargo", source: "Sektör: Lojistik", meaning: "taşıma" }
+    ]
+  },
+  {
+    id: "cybersecurity",
+    label: "Siber Güvenlik / Gizlilik",
+    signals: ["koruma", "şifre", "güven", "savunma"],
+    roots: [
+      { sound: "shield", source: "Sektör: Güvenlik", meaning: "koruma" },
+      { sound: "vault", source: "Sektör: Gizlilik", meaning: "kasa" },
+      { sound: "cipher", source: "Sektör: Siber", meaning: "şifre" }
+    ]
+  },
+  {
+    id: "climate",
+    label: "İklim / Enerji / Sürdürülebilirlik",
+    signals: ["temiz enerji", "denge", "döngü", "gelecek"],
+    roots: [
+      { sound: "sol", source: "Sektör: Enerji", meaning: "güneş" },
+      { sound: "terra", source: "Sektör: İklim", meaning: "dünya" },
+      { sound: "cycle", source: "Sektör: Sürdürülebilirlik", meaning: "döngü" }
+    ]
+  },
+  {
+    id: "agriculture",
+    label: "Tarım / Gıda Teknolojisi",
+    signals: ["toprak", "hasat", "verim", "doğa"],
+    roots: [
+      { sound: "seed", source: "Sektör: Tarım", meaning: "tohum" },
+      { sound: "harvest", source: "Sektör: Tarım", meaning: "hasat" },
+      { sound: "flora", source: "Sektör: Doğa", meaning: "bitki yaşamı" }
+    ]
+  },
+  {
+    id: "legal",
+    label: "Hukuk / Danışmanlık / RegTech",
+    signals: ["güven", "netlik", "uyum", "kanıt"],
+    roots: [
+      { sound: "lex", source: "Sektör: Hukuk", meaning: "kanun" },
+      { sound: "claro", source: "Sektör: Danışmanlık", meaning: "netlik" },
+      { sound: "proof", source: "Sektör: Uyum", meaning: "kanıt" }
+    ]
+  },
+  {
+    id: "hr",
+    label: "İK / Kariyer / Topluluk",
+    signals: ["insan", "ekip", "gelişim", "bağ"],
+    roots: [
+      { sound: "talent", source: "Sektör: İK", meaning: "yetenek" },
+      { sound: "crew", source: "Sektör: Ekip", meaning: "takım" },
+      { sound: "kin", source: "Sektör: Topluluk", meaning: "yakın bağ" }
+    ]
+  },
+  {
+    id: "creator",
+    label: "Creator / Medya / Podcast",
+    signals: ["ses", "içerik", "yayın", "topluluk"],
+    roots: [
+      { sound: "cast", source: "Sektör: Medya", meaning: "yayın" },
+      { sound: "echo", source: "Sektör: Podcast", meaning: "ses" },
+      { sound: "story", source: "Sektör: İçerik", meaning: "anlatı" }
+    ]
+  },
+  {
+    id: "art",
+    label: "Sanat / Kültür / Tasarım",
+    signals: ["yaratıcılık", "estetik", "sahne", "koleksiyon"],
+    roots: [
+      { sound: "muse", source: "Sektör: Sanat", meaning: "ilham" },
+      { sound: "atelier", source: "Sektör: Tasarım", meaning: "atölye" },
+      { sound: "forma", source: "Sektör: Tasarım", meaning: "biçim" }
+    ]
+  },
+  {
+    id: "automotive",
+    label: "Otomotiv / Mobilite / Araç",
+    signals: ["hareket", "yol", "hız", "güç"],
+    roots: [
+      { sound: "drive", source: "Sektör: Otomotiv", meaning: "sürüş" },
+      { sound: "motor", source: "Sektör: Araç", meaning: "güç" },
+      { sound: "vector", source: "Sektör: Mobilite", meaning: "yön" }
+    ]
+  },
+  {
+    id: "sports",
+    label: "Spor / Fitness / Outdoor",
+    signals: ["performans", "enerji", "dayanıklılık", "hareket"],
+    roots: [
+      { sound: "pulse", source: "Sektör: Spor", meaning: "ritim" },
+      { sound: "stride", source: "Sektör: Fitness", meaning: "adım" },
+      { sound: "peak", source: "Sektör: Outdoor", meaning: "zirve" }
+    ]
+  },
+  {
+    id: "kids",
+    label: "Çocuk / Aile / Oyuncak",
+    signals: ["neşe", "güven", "oyun", "öğrenme"],
+    roots: [
+      { sound: "milo", source: "Sektör: Çocuk", meaning: "yumuşak yakınlık" },
+      { sound: "play", source: "Sektör: Oyuncak", meaning: "oyun" },
+      { sound: "nido", source: "Sektör: Aile", meaning: "yuva" }
+    ]
+  },
+  {
+    id: "pets",
+    label: "Pet / Hayvan Sağlığı",
+    signals: ["yakınlık", "bakım", "güven", "oyun"],
+    roots: [
+      { sound: "pati", source: "Sektör: Pet", meaning: "pati" },
+      { sound: "care", source: "Sektör: Bakım", meaning: "özen" },
+      { sound: "buddy", source: "Sektör: Pet", meaning: "dost" }
+    ]
+  },
+  {
+    id: "web3",
+    label: "Web3 / Kripto / Topluluk",
+    signals: ["ağ", "sahiplik", "token", "topluluk"],
+    roots: [
+      { sound: "chain", source: "Sektör: Web3", meaning: "zincir" },
+      { sound: "node", source: "Sektör: Ağ", meaning: "düğüm" },
+      { sound: "mint", source: "Sektör: Token", meaning: "basım, değer" }
+    ]
+  },
+  {
+    id: "hardware",
+    label: "Donanım / IoT / Robotik",
+    signals: ["cihaz", "sensör", "mekanik", "akıllı"],
+    roots: [
+      { sound: "servo", source: "Sektör: Robotik", meaning: "hareket kontrolü" },
+      { sound: "sensor", source: "Sektör: IoT", meaning: "algı" },
+      { sound: "core", source: "Sektör: Donanım", meaning: "çekirdek" }
+    ]
+  },
+  {
+    id: "nonprofit",
+    label: "Sosyal Girişim / Vakıf",
+    signals: ["etki", "topluluk", "fayda", "güven"],
+    roots: [
+      { sound: "impact", source: "Sektör: Sosyal", meaning: "etki" },
+      { sound: "hope", source: "Sektör: Fayda", meaning: "umut" },
+      { sound: "civic", source: "Sektör: Toplum", meaning: "kamusal bağ" }
+    ]
+  }
 ];
 
 const toneOptions = [
@@ -1109,6 +1398,50 @@ function candidateMatchesDomainFilter(candidate: Candidate, filter: DomainFilter
   return true;
 }
 
+function clampScore(value: number) {
+  return Math.max(0, Math.min(99, Math.round(value)));
+}
+
+function brandScoreFor(candidate: Candidate, category: SectorCategory, story?: BrandStory): BrandScore {
+  const normalizedName = candidate.name.toLowerCase();
+  const nameLength = normalizedName.length;
+  const vowels = normalizedName.replace(/[^aeiou]/g, "").length;
+  const vowelBalance = vowels / Math.max(1, nameLength);
+  const lengthScore = nameLength >= 5 && nameLength <= 9 ? 88 : nameLength >= 4 && nameLength <= 12 ? 76 : 58;
+  const soundScore = vowelBalance >= 0.32 && vowelBalance <= 0.58 ? 86 : 70;
+  const repeatPenalty = /(.)\1{2,}/.test(normalizedName) ? 12 : 0;
+  const recall = clampScore(lengthScore * 0.62 + soundScore * 0.38 - repeatPenalty);
+
+  const haystack = `${candidate.name} ${candidate.roots} ${candidate.note} ${candidate.context} ${candidate.tags.join(
+    " "
+  )}`.toLowerCase();
+  const signalHits = category.signals.filter((signal) => haystack.includes(signal.toLowerCase())).length;
+  const sectorRootHit = category.roots.some((root) => haystack.includes(root.sound.toLowerCase())) ? 1 : 0;
+  const sectorFit = clampScore(58 + signalHits * 8 + sectorRootHit * 14 + (hashValue(`${category.id}${candidate.name}`) % 12));
+
+  const domainStatuses = Object.values(candidate.domains);
+  const domain = clampScore(
+    50 +
+      domainStatuses.filter((status) => status === "available").length * 15 +
+      domainStatuses.filter((status) => status === "review").length * 4 -
+      domainStatuses.filter((status) => status === "taken").length * 9 +
+      (candidate.domains[".com"] === "available" ? 12 : 0)
+  );
+
+  const trademarkStatuses = Object.values(candidate.trademarks);
+  const trademark = clampScore(
+    54 +
+      trademarkStatuses.filter((status) => status === "clear").length * 11 +
+      trademarkStatuses.filter((status) => status === "watch").length * 2 -
+      trademarkStatuses.filter((status) => status === "conflict").length * 14
+  );
+
+  const storyScore = story ? 88 : 58;
+  const total = clampScore(recall * 0.28 + sectorFit * 0.28 + domain * 0.2 + trademark * 0.16 + storyScore * 0.08);
+
+  return { total, recall, sectorFit, domain, trademark, story: storyScore };
+}
+
 function makeLocalBrandStory({
   candidate,
   sector,
@@ -1279,6 +1612,7 @@ function AuthLanding() {
 
 function App({ clerkEnabled = false }: AppProps) {
   const [design, setDesign] = useState<DesignId>("studio");
+  const [sectorCategory, setSectorCategory] = useState(sectorCategories[0].id);
   const [sector, setSector] = useState("Yapay zeka destekli marka isimlendirme platformu");
   const [keywords, setKeywords] = useState("özgün, hızlı, güvenilir, global");
   const [blendInput, setBlendInput] = useState("Onur, Mira, Nova");
@@ -1320,15 +1654,25 @@ function App({ clerkEnabled = false }: AppProps) {
   const [copied, setCopied] = useState(false);
   const [copiedName, setCopiedName] = useState("");
 
+  const selectedSectorCategory = useMemo(
+    () => sectorCategories.find((category) => category.id === sectorCategory) ?? sectorCategories[0],
+    [sectorCategory]
+  );
+  const sectorContext = `${sector} | ${selectedSectorCategory.label} | ${selectedSectorCategory.signals.join(", ")}`;
+
   const activeRoots = useMemo(
-    () => [...nameRootsFromBlendInput(blendInput), ...rootsForLanguages(languages)],
-    [blendInput, languages]
+    () => [
+      ...nameRootsFromBlendInput(blendInput),
+      ...selectedSectorCategory.roots,
+      ...rootsForLanguages(languages)
+    ],
+    [blendInput, languages, selectedSectorCategory]
   );
 
   const localCandidates = useMemo(
     () =>
       generateCandidates({
-        sector,
+        sector: sectorContext,
         keywords,
         blendInput,
         blendMode,
@@ -1349,6 +1693,7 @@ function App({ clerkEnabled = false }: AppProps) {
       }),
     [
       sector,
+      sectorContext,
       keywords,
       blendInput,
       blendMode,
@@ -1390,10 +1735,20 @@ function App({ clerkEnabled = false }: AppProps) {
     () => candidatesWithDomains.filter((candidate) => candidateMatchesDomainFilter(candidate, domainFilter)),
     [candidatesWithDomains, domainFilter]
   );
+  const brandScores = useMemo(
+    () =>
+      Object.fromEntries(
+        candidatesWithDomains.map((candidate) => [
+          candidate.name,
+          brandScoreFor(candidate, selectedSectorCategory, stories[candidate.name] ?? candidate.story)
+        ])
+      ) as Record<string, BrandScore>,
+    [candidatesWithDomains, selectedSectorCategory, stories]
+  );
 
   const savedItems = Object.values(saved);
   const bestScore = filteredCandidates.length
-    ? Math.max(...filteredCandidates.map((candidate) => candidate.score))
+    ? Math.max(...filteredCandidates.map((candidate) => brandScores[candidate.name]?.total ?? candidate.score))
     : 0;
   const openDomainCount = filteredCandidates.reduce(
     (total, candidate) =>
@@ -1413,6 +1768,8 @@ function App({ clerkEnabled = false }: AppProps) {
     setDomainStatusText(DOMAIN_PENDING_TEXT);
   }, [
     sector,
+    sectorCategory,
+    sectorContext,
     keywords,
     blendInput,
     blendMode,
@@ -1477,6 +1834,7 @@ function App({ clerkEnabled = false }: AppProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           sector,
+          sectorCategory: selectedSectorCategory.label,
           keywords,
           blendInput,
           blendMode,
@@ -1623,7 +1981,7 @@ function App({ clerkEnabled = false }: AppProps) {
   }
 
   async function handleGenerateStory(candidate: Candidate) {
-    const fallbackStory = makeLocalBrandStory({ candidate, sector, keywords, tone, pulse });
+    const fallbackStory = makeLocalBrandStory({ candidate, sector: sectorContext, keywords, tone, pulse });
     setStoryLoading((current) => ({ ...current, [candidate.name]: true }));
     setStoryStatus((current) => ({ ...current, [candidate.name]: "Marka hikayesi hazırlanıyor..." }));
 
@@ -1647,7 +2005,8 @@ function App({ clerkEnabled = false }: AppProps) {
             domains: candidate.domains,
             trademarks: candidate.trademarks
           },
-          sector,
+          sector: sectorContext,
+          sectorCategory: selectedSectorCategory.label,
           keywords,
           tone,
           pulse,
@@ -1683,8 +2042,9 @@ function App({ clerkEnabled = false }: AppProps) {
   async function copyShortlist() {
     const text = savedItems
       .map((item) => {
+        const score = brandScoreFor(item, selectedSectorCategory, item.story);
         const story = item.story ? ` - Hikaye: ${item.story.pitch}` : "";
-        return `${item.name} - ${item.score}/100 - ${item.roots} - ${item.context}${story}`;
+        return `${item.name} - Marka puanı ${score.total}/100 - ${item.roots} - ${item.context}${story}`;
       })
       .join("\n");
     if (text) {
@@ -1696,11 +2056,12 @@ function App({ clerkEnabled = false }: AppProps) {
 
   async function copyCandidate(candidate: Candidate) {
     const story = stories[candidate.name] ?? candidate.story;
+    const brandScore = brandScores[candidate.name] ?? brandScoreFor(candidate, selectedSectorCategory, story);
     const firstDomain = Object.entries(candidate.domains)
       .map(([extension, status]) => `${candidate.name.toLowerCase()}${extension}: ${availabilityMeta(status).label}`)
       .join(", ");
     await navigator.clipboard.writeText(
-      `${candidate.name}\nSkor: ${candidate.score}/100\nKökler: ${candidate.roots}\nBağlam: ${candidate.context}\nDomain: ${firstDomain}${
+      `${candidate.name}\nMarka puanı: ${brandScore.total}/100\nSektör: ${selectedSectorCategory.label}\nKökler: ${candidate.roots}\nBağlam: ${candidate.context}\nDomain: ${firstDomain}${
         story
           ? `\n\nMarka hikayesi: ${story.origin}\nPitch: ${story.pitch}\nSloganlar: ${story.taglines.join(" / ")}\nHero: ${story.hero}`
           : ""
@@ -1797,6 +2158,23 @@ function App({ clerkEnabled = false }: AppProps) {
               <span>Sektör / ürün</span>
               <textarea value={sector} onChange={(event) => setSector(event.target.value)} rows={3} />
             </label>
+
+            <label className="field">
+              <span>Sektör kategorisi</span>
+              <select value={sectorCategory} onChange={(event) => setSectorCategory(event.target.value)}>
+                {sectorCategories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <div className="sector-signal-row">
+              {selectedSectorCategory.signals.slice(0, 4).map((signal) => (
+                <span key={signal}>{signal}</span>
+              ))}
+            </div>
 
             <label className="field">
               <span>Ana çağrışımlar</span>
@@ -2110,6 +2488,7 @@ function App({ clerkEnabled = false }: AppProps) {
               {filteredCandidates.map((candidate) => {
                 const story = stories[candidate.name] ?? candidate.story;
                 const isStoryLoading = Boolean(storyLoading[candidate.name]);
+                const brandScore = brandScores[candidate.name] ?? brandScoreFor(candidate, selectedSectorCategory, story);
                 return (
                 <article className="name-card" key={candidate.name}>
                   <div className="card-topline">
@@ -2134,11 +2513,18 @@ function App({ clerkEnabled = false }: AppProps) {
                     ))}
                   </div>
                   <div className="score-line">
-                    <span>Skor</span>
+                    <span>Marka puanı</span>
                     <div>
-                      <i style={{ width: `${candidate.score}%` }} />
+                      <i style={{ width: `${brandScore.total}%` }} />
                     </div>
-                    <strong>{candidate.score}</strong>
+                    <strong>{brandScore.total}</strong>
+                  </div>
+                  <div className="score-breakdown">
+                    <span>Akılda {brandScore.recall}</span>
+                    <span>Sektör {brandScore.sectorFit}</span>
+                    <span>Domain {brandScore.domain}</span>
+                    <span>Tescil {brandScore.trademark}</span>
+                    <span>Hikaye {brandScore.story}</span>
                   </div>
                   <div className="status-table">
                     <div>
@@ -2262,7 +2648,7 @@ function App({ clerkEnabled = false }: AppProps) {
                   <div className="saved-row" key={item.name}>
                     <div>
                       <strong>{item.name}</strong>
-                      <span>{item.score}/100</span>
+                      <span>{brandScoreFor(item, selectedSectorCategory, item.story).total}/100</span>
                     </div>
                     <button onClick={() => toggleSaved(item)} title="Kaldır" type="button">
                       <XCircle size={16} />
