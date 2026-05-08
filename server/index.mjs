@@ -258,6 +258,184 @@ async function callGemini(payload) {
   return parsed.candidates;
 }
 
+function buildStoryPrompt(payload) {
+  const candidate = payload.candidate ?? {};
+  const domainLines = Object.entries(candidate.domains ?? {})
+    .map(([extension, status]) => `${candidate.name}${extension}: ${status}`)
+    .join(", ");
+  const trademarkLines = Object.entries(candidate.trademarks ?? {})
+    .map(([region, status]) => `${region}: ${status}`)
+    .join(", ");
+
+  return `Türkçe yazan kıdemli marka hikayesi stratejistisin.
+Bir marka ismi için kısa, satılabilir ama dürüst bir hikaye paketi üret.
+
+İsim: ${candidate.name}
+Kök/bağlam: ${candidate.roots}
+Not: ${candidate.note}
+Açıklama: ${candidate.context}
+Etiketler: ${(candidate.tags ?? []).join(", ")}
+Domain sinyali: ${domainLines || "Kontrol bekliyor"}
+Tescil sinyali: ${trademarkLines || "Kontrol bekliyor"}
+Sektör: ${payload.sector}
+Çağrışımlar: ${payload.keywords}
+Ton: ${payload.tone}
+Duygu: ${payload.pulse}
+
+Sadece geçerli JSON dön. Format:
+{
+  "story": {
+    "origin": "2-3 cümle, kurmaca ama dürüst marka hikayesi",
+    "pitch": "tek paragraf marka vaadi",
+    "taglines": ["3-5 kısa slogan"],
+    "audience": "hedef kitle ve hissi",
+    "hero": "web sitesi giriş metni",
+    "founder": "kurucu anlatısı",
+    "socialBio": "kısa sosyal medya bio"
+  }
+}
+
+Kurallar:
+- Sahte tarih, sahte antik köken veya kesin tescil/domain garantisi verme.
+- Dil/kök için 'esinlenen', 'çağrıştıran', 'kurmaca marka anlatısı' gibi güvenli ifadeler kullan.
+- İsim mevcut büyük markaları taklit ediyormuş gibi anlatma.
+- Cümleler ticari kullanım için temiz, kısa ve güven verici olsun.`;
+}
+
+function normalizeStory(rawStory) {
+  const story = rawStory?.story ?? rawStory ?? {};
+  const taglines = Array.isArray(story.taglines) ? story.taglines.map(String) : [];
+  return {
+    origin: String(story.origin ?? "").slice(0, 900),
+    pitch: String(story.pitch ?? "").slice(0, 900),
+    taglines: taglines.filter(Boolean).slice(0, 5),
+    audience: String(story.audience ?? "").slice(0, 700),
+    hero: String(story.hero ?? "").slice(0, 700),
+    founder: String(story.founder ?? "").slice(0, 800),
+    socialBio: String(story.socialBio ?? "").slice(0, 360)
+  };
+}
+
+function assertStory(story) {
+  if (!story.origin || !story.pitch || !story.taglines.length || !story.hero) {
+    throw new Error("AI story response did not include required fields");
+  }
+  return story;
+}
+
+async function callStoryOpenAiCompatible(payload) {
+  const endpoint = normalizeEndpoint(payload.aiEndpoint);
+  const response = await fetch(`${endpoint}/chat/completions`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${payload.apiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: payload.aiModel || "gpt-4.1-mini",
+      temperature: 0.78,
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content: "You create brand story packages and return strict JSON only."
+        },
+        {
+          role: "user",
+          content: buildStoryPrompt(payload)
+        }
+      ]
+    })
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data?.error?.message || `AI provider returned ${response.status}`);
+  }
+  const parsed = extractJson(data?.choices?.[0]?.message?.content);
+  return assertStory(normalizeStory(parsed));
+}
+
+async function callStoryAnthropic(payload) {
+  const endpoint = String(payload.aiEndpoint || "https://api.anthropic.com").replace(/\/+$/, "");
+  const response = await fetch(`${endpoint}/v1/messages`, {
+    method: "POST",
+    headers: {
+      "x-api-key": payload.apiKey,
+      "anthropic-version": "2023-06-01",
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: payload.aiModel || "claude-3-5-sonnet-latest",
+      max_tokens: 1800,
+      temperature: 0.78,
+      system: "Return strict JSON only. Do not invent false historical claims.",
+      messages: [{ role: "user", content: buildStoryPrompt(payload) }]
+    })
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data?.error?.message || `Anthropic returned ${response.status}`);
+  }
+  const text = data?.content?.map((part) => part.text).join("\n");
+  return assertStory(normalizeStory(extractJson(text)));
+}
+
+async function callStoryGemini(payload) {
+  const model = payload.aiModel || "gemini-1.5-flash";
+  const endpoint = String(
+    payload.aiEndpoint || "https://generativelanguage.googleapis.com/v1beta"
+  ).replace(/\/+$/, "");
+  const response = await fetch(
+    `${endpoint}/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(payload.apiKey)}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        generationConfig: {
+          temperature: 0.78,
+          responseMimeType: "application/json"
+        },
+        contents: [{ role: "user", parts: [{ text: buildStoryPrompt(payload) }] }]
+      })
+    }
+  );
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data?.error?.message || `Gemini returned ${response.status}`);
+  }
+  const text = data?.candidates?.[0]?.content?.parts?.map((part) => part.text).join("\n");
+  return assertStory(normalizeStory(extractJson(text)));
+}
+
+async function handleAiStory(payload) {
+  const resolved = resolveApiKey(payload);
+  if (!resolved.apiKey) {
+    return {
+      mode: "fallback",
+      message: `${resolved.source} bulunamadı; frontend lokal hikaye motorunu kullanmalı.`
+    };
+  }
+
+  const effectivePayload = { ...payload, apiKey: resolved.apiKey };
+  let story;
+  if (effectivePayload.aiProvider === "Anthropic") {
+    story = await callStoryAnthropic(effectivePayload);
+  } else if (effectivePayload.aiProvider === "Google Gemini") {
+    story = await callStoryGemini(effectivePayload);
+  } else {
+    story = await callStoryOpenAiCompatible(effectivePayload);
+  }
+
+  return {
+    mode: "live",
+    message:
+      resolved.source === "browser"
+        ? "AI sağlayıcısından marka hikayesi alındı."
+        : `AI marka hikayesi ${resolved.source} ile alındı.`,
+    story
+  };
+}
+
 async function handleAiNames(payload) {
   const resolved = resolveApiKey(payload);
   if (!resolved.apiKey) {
@@ -430,6 +608,12 @@ async function route(req, res) {
   if (req.method === "POST" && url.pathname === "/api/ai/names") {
     const payload = await readJson(req);
     const result = await handleAiNames(payload);
+    writeJson(res, 200, result);
+    return;
+  }
+  if (req.method === "POST" && url.pathname === "/api/ai/story") {
+    const payload = await readJson(req);
+    const result = await handleAiStory(payload);
     writeJson(res, 200, result);
     return;
   }

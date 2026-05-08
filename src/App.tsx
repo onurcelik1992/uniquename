@@ -6,6 +6,7 @@ import {
   Check,
   Copy,
   Database,
+  FileText,
   Gauge,
   Globe,
   KeyRound,
@@ -32,6 +33,16 @@ type ApiMode = "local" | "live" | "fallback" | "error";
 type BlendMode = "2li" | "3lu" | "auto";
 type DomainFilter = "all" | "anyAvailable" | "comAvailable" | "unchecked" | "hideTaken";
 
+type BrandStory = {
+  origin: string;
+  pitch: string;
+  taglines: string[];
+  audience: string;
+  hero: string;
+  founder: string;
+  socialBio: string;
+};
+
 type Root = {
   sound: string;
   source: string;
@@ -47,6 +58,7 @@ type Candidate = {
   tags: string[];
   domains: Record<string, Availability>;
   trademarks: Record<string, Trademark>;
+  story?: BrandStory;
 };
 
 type AiCandidate = {
@@ -1097,6 +1109,46 @@ function candidateMatchesDomainFilter(candidate: Candidate, filter: DomainFilter
   return true;
 }
 
+function makeLocalBrandStory({
+  candidate,
+  sector,
+  keywords,
+  tone,
+  pulse
+}: {
+  candidate: Candidate;
+  sector: string;
+  keywords: string;
+  tone: string;
+  pulse: string;
+}): BrandStory {
+  const keywordList = keywords
+    .split(",")
+    .map((keyword) => keyword.trim())
+    .filter(Boolean)
+    .slice(0, 3);
+  const signal = keywordList.length ? keywordList.join(", ") : "güven, hız ve özgünlük";
+  const availableDomain = Object.entries(candidate.domains).find(([, status]) => status === "available")?.[0];
+  const domainLine = availableDomain
+    ? `${candidate.name.toLowerCase()}${availableDomain} için canlı RDAP fırsatı da hikayeyi hızlandırır.`
+    : "Domain tarafı kesinleşene kadar hikaye, isim hissi ve kategori vaadi üzerinden kurulmalıdır.";
+
+  return {
+    origin: `${candidate.name}, gerçek bir tarih iddiası taşımayan kurmaca bir marka anlatısıdır. ${candidate.roots} çizgisinden esinlenir; kısa sesi ${tone.toLowerCase()} bir marka duruşu ve ${pulse.toLowerCase()} hissi verir.`,
+    pitch: `${candidate.name}, ${sector.toLowerCase()} alanında ${signal} arayan insanlar için sade ve akılda kalan bir başlangıç noktası sunar. Marka, karmaşık karar anlarını daha net, daha hızlı ve daha güvenilir hissettirmeyi vaat eder.`,
+    taglines: [
+      `${candidate.name} ile isim netleşir.`,
+      "Fikrin sesini bul.",
+      "Kısa isim, güçlü hikaye.",
+      `${pulse} hissini markaya taşı.`
+    ],
+    audience: `${candidate.name}, yeni bir ürün, stüdyo, SaaS, ajans veya yaratıcı girişim kurarken premium ama erişilebilir bir isim arayan ekiplerle iyi eşleşir.`,
+    hero: `${candidate.name}, marka ismi arayışını sezgisel bir keşfe dönüştürür: anlamı, sesi, domain sinyalini ve tescil riskini aynı masada toplar.`,
+    founder: `Kurucu hikayesi ${candidate.name} etrafında şöyle kurulabilir: iyi fikirler çoğu zaman hazırdır, ama doğru isim gelmeden görünür olmaz. Bu marka, o eşiği kısaltmak için doğdu.`,
+    socialBio: `${candidate.name} | İsim, anlam ve marka hikayesini aynı yerde bul. ${domainLine}`
+  };
+}
+
 function uniqueRoots(roots: Root[]) {
   return roots.filter(
     (root, index, arr) =>
@@ -1253,6 +1305,9 @@ function App({ clerkEnabled = false }: AppProps) {
   const [domainStatusText, setDomainStatusText] = useState(DOMAIN_PENDING_TEXT);
   const [isCheckingDomains, setIsCheckingDomains] = useState(false);
   const [domainFilter, setDomainFilter] = useState<DomainFilter>("all");
+  const [stories, setStories] = useState<Record<string, BrandStory>>({});
+  const [storyLoading, setStoryLoading] = useState<Record<string, boolean>>({});
+  const [storyStatus, setStoryStatus] = useState<Record<string, string>>({});
   const [round, setRound] = useState(1);
   const [saved, setSaved] = useState<Record<string, Candidate>>(() => {
     try {
@@ -1551,15 +1606,86 @@ function App({ clerkEnabled = false }: AppProps) {
       if (next[candidate.name]) {
         delete next[candidate.name];
       } else {
-        next[candidate.name] = candidate;
+        next[candidate.name] = { ...candidate, story: stories[candidate.name] ?? candidate.story };
       }
       return next;
     });
   }
 
+  function setStoryForCandidate(candidate: Candidate, story: BrandStory, status: string) {
+    setStories((current) => ({ ...current, [candidate.name]: story }));
+    setStoryStatus((current) => ({ ...current, [candidate.name]: status }));
+    setSaved((current) =>
+      current[candidate.name]
+        ? { ...current, [candidate.name]: { ...current[candidate.name], story } }
+        : current
+    );
+  }
+
+  async function handleGenerateStory(candidate: Candidate) {
+    const fallbackStory = makeLocalBrandStory({ candidate, sector, keywords, tone, pulse });
+    setStoryLoading((current) => ({ ...current, [candidate.name]: true }));
+    setStoryStatus((current) => ({ ...current, [candidate.name]: "Marka hikayesi hazırlanıyor..." }));
+
+    if (!aiContextMode || (!apiKey.trim() && !useBackendKey)) {
+      setStoryForCandidate(candidate, fallbackStory, "Lokal hikaye motoru üretildi.");
+      setStoryLoading((current) => ({ ...current, [candidate.name]: false }));
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE}/api/ai/story`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          candidate: {
+            name: candidate.name,
+            roots: candidate.roots,
+            note: candidate.note,
+            context: candidate.context,
+            tags: candidate.tags,
+            domains: candidate.domains,
+            trademarks: candidate.trademarks
+          },
+          sector,
+          keywords,
+          tone,
+          pulse,
+          aiProvider,
+          aiEndpoint,
+          aiModel,
+          apiKey: useBackendKey ? "" : apiKey,
+          useBackendKey
+        })
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.error || "Hikaye endpoint hata verdi");
+      }
+      if (payload.mode === "fallback" || !payload.story) {
+        setStoryForCandidate(candidate, fallbackStory, "AI anahtarı yok; lokal hikaye üretildi.");
+        return;
+      }
+      setStoryForCandidate(candidate, payload.story as BrandStory, payload.message || "AI marka hikayesi üretildi.");
+    } catch (error) {
+      setStoryForCandidate(
+        candidate,
+        fallbackStory,
+        `AI hikaye bağlantısı başarısız; lokal hikaye üretildi. ${
+          error instanceof Error ? error.message : "Bilinmeyen hata"
+        }`
+      );
+    } finally {
+      setStoryLoading((current) => ({ ...current, [candidate.name]: false }));
+    }
+  }
+
   async function copyShortlist() {
     const text = savedItems
-      .map((item) => `${item.name} - ${item.score}/100 - ${item.roots} - ${item.context}`)
+      .map((item) => {
+        const story = item.story ? ` - Hikaye: ${item.story.pitch}` : "";
+        return `${item.name} - ${item.score}/100 - ${item.roots} - ${item.context}${story}`;
+      })
       .join("\n");
     if (text) {
       await navigator.clipboard.writeText(text);
@@ -1569,11 +1695,16 @@ function App({ clerkEnabled = false }: AppProps) {
   }
 
   async function copyCandidate(candidate: Candidate) {
+    const story = stories[candidate.name] ?? candidate.story;
     const firstDomain = Object.entries(candidate.domains)
       .map(([extension, status]) => `${candidate.name.toLowerCase()}${extension}: ${availabilityMeta(status).label}`)
       .join(", ");
     await navigator.clipboard.writeText(
-      `${candidate.name}\nSkor: ${candidate.score}/100\nKökler: ${candidate.roots}\nBağlam: ${candidate.context}\nDomain: ${firstDomain}`
+      `${candidate.name}\nSkor: ${candidate.score}/100\nKökler: ${candidate.roots}\nBağlam: ${candidate.context}\nDomain: ${firstDomain}${
+        story
+          ? `\n\nMarka hikayesi: ${story.origin}\nPitch: ${story.pitch}\nSloganlar: ${story.taglines.join(" / ")}\nHero: ${story.hero}`
+          : ""
+      }`
     );
     setCopiedName(candidate.name);
     window.setTimeout(() => setCopiedName(""), 1400);
@@ -1976,7 +2107,10 @@ function App({ clerkEnabled = false }: AppProps) {
             </div>
 
             <div className="name-grid">
-              {filteredCandidates.map((candidate) => (
+              {filteredCandidates.map((candidate) => {
+                const story = stories[candidate.name] ?? candidate.story;
+                const isStoryLoading = Boolean(storyLoading[candidate.name]);
+                return (
                 <article className="name-card" key={candidate.name}>
                   <div className="card-topline">
                     <div>
@@ -2037,6 +2171,10 @@ function App({ clerkEnabled = false }: AppProps) {
                     </div>
                   </div>
                   <div className="card-actions">
+                    <button disabled={isStoryLoading} onClick={() => handleGenerateStory(candidate)} type="button">
+                      <FileText size={15} />
+                      {isStoryLoading ? "Hikaye..." : story ? "Hikayeyi yenile" : "Hikaye üret"}
+                    </button>
                     <button onClick={() => copyCandidate(candidate)} type="button">
                       <Copy size={15} />
                       {copiedName === candidate.name ? "Kopyalandı" : "Kopyala"}
@@ -2052,8 +2190,48 @@ function App({ clerkEnabled = false }: AppProps) {
                       </a>
                     ))}
                   </div>
+                  {storyStatus[candidate.name] ? <p className="story-note">{storyStatus[candidate.name]}</p> : null}
+                  {story ? (
+                    <div className="story-panel">
+                      <div>
+                        <span className="eyebrow">Marka hikayesi</span>
+                        <p>{story.origin}</p>
+                      </div>
+                      <div>
+                        <strong>Pitch</strong>
+                        <p>{story.pitch}</p>
+                      </div>
+                      <div>
+                        <strong>Slogan</strong>
+                        <div className="tag-row">
+                          {story.taglines.slice(0, 4).map((tagline) => (
+                            <span key={tagline}>{tagline}</span>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="story-grid">
+                        <div>
+                          <strong>Hedef his</strong>
+                          <p>{story.audience}</p>
+                        </div>
+                        <div>
+                          <strong>Hero metni</strong>
+                          <p>{story.hero}</p>
+                        </div>
+                      </div>
+                      <div>
+                        <strong>Kurucu anlatısı</strong>
+                        <p>{story.founder}</p>
+                      </div>
+                      <div>
+                        <strong>Sosyal bio</strong>
+                        <p>{story.socialBio}</p>
+                      </div>
+                    </div>
+                  ) : null}
                 </article>
-              ))}
+                );
+              })}
             </div>
             {filteredCandidates.length === 0 ? (
               <div className="results-empty">
