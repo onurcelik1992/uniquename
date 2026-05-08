@@ -26,7 +26,7 @@ import type { LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 type DesignId = "studio" | "radar" | "atelier";
-type Availability = "available" | "review" | "taken";
+type Availability = "available" | "review" | "taken" | "unchecked";
 type Trademark = "clear" | "watch" | "conflict";
 type ApiMode = "local" | "live" | "fallback" | "error";
 type BlendMode = "2li" | "3lu" | "auto";
@@ -170,6 +170,8 @@ const languagePresets = [
 
 const apiProviders = ["OpenAI uyumlu", "Anthropic", "Google Gemini", "Mistral", "Yerel model"];
 const API_BASE = import.meta.env.VITE_NAMEFORGE_API_BASE || "http://127.0.0.1:8787";
+const DOMAIN_PENDING_TEXT =
+  "Domainler canlı RDAP kontrolü bekliyor; Boş/Dolu sadece doğrulama sonrası gösterilir.";
 
 const turkishMap: Record<string, string> = {
   ç: "c",
@@ -608,11 +610,10 @@ function buildAiContext({
 }
 
 function domainStatus(name: string, ext: string, risk: number): Availability {
-  const pressure = ext === ".com" ? 18 : ext === ".ai" ? 10 : ext === ".com.tr" ? 8 : 0;
-  const score = (hashValue(`${name}${ext}`) + pressure + Math.floor(risk / 8)) % 100;
-  if (score < 44) return "available";
-  if (score < 74) return "review";
-  return "taken";
+  void name;
+  void ext;
+  void risk;
+  return "unchecked";
 }
 
 function trademarkStatus(name: string, region: string, risk: number): Trademark {
@@ -901,7 +902,8 @@ function generateCandidates({
 
 function availabilityMeta(status: Availability) {
   if (status === "available") return { label: "Boş", className: "good" };
-  if (status === "review") return { label: "Yakın", className: "warn" };
+  if (status === "review") return { label: "İncele", className: "warn" };
+  if (status === "unchecked") return { label: "Kontrol", className: "warn" };
   return { label: "Dolu", className: "bad" };
 }
 
@@ -1063,7 +1065,7 @@ function App({ clerkEnabled = false }: AppProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [liveCandidates, setLiveCandidates] = useState<Candidate[] | null>(null);
   const [domainOverrides, setDomainOverrides] = useState<Record<string, Record<string, Availability>>>({});
-  const [domainStatusText, setDomainStatusText] = useState("Domainler şu an tahmini skor.");
+  const [domainStatusText, setDomainStatusText] = useState(DOMAIN_PENDING_TEXT);
   const [isCheckingDomains, setIsCheckingDomains] = useState(false);
   const [round, setRound] = useState(1);
   const [saved, setSaved] = useState<Record<string, Candidate>>(() => {
@@ -1153,6 +1155,7 @@ function App({ clerkEnabled = false }: AppProps) {
   useEffect(() => {
     setLiveCandidates(null);
     setDomainOverrides({});
+    setDomainStatusText(DOMAIN_PENDING_TEXT);
   }, [
     sector,
     keywords,
@@ -1191,11 +1194,13 @@ function App({ clerkEnabled = false }: AppProps) {
     setLanguages(values);
     setLiveCandidates(null);
     setDomainOverrides({});
+    setDomainStatusText(DOMAIN_PENDING_TEXT);
     setRound((value) => value + 1);
   }
 
   async function handleGenerateNames() {
     setDomainOverrides({});
+    setDomainStatusText(DOMAIN_PENDING_TEXT);
     if (!aiContextMode || (!apiKey.trim() && !useBackendKey)) {
       setLiveCandidates(null);
       setApiMode(apiKey.trim() ? "local" : "fallback");
@@ -1293,7 +1298,7 @@ function App({ clerkEnabled = false }: AppProps) {
       setDomainStatusText(payload.message || "RDAP canlı domain kontrolü tamamlandı.");
     } catch (error) {
       setDomainStatusText(
-        `Canlı domain kontrolü başarısız; tahmini skorlar korunuyor. ${
+        `Canlı domain kontrolü başarısız; domainler kontrol bekliyor. ${
           error instanceof Error ? error.message : "Bilinmeyen hata"
         }`
       );
@@ -1666,7 +1671,7 @@ function App({ clerkEnabled = false }: AppProps) {
               </div>
               <div className="metric">
                 <Globe size={18} />
-                <span>Boş domain</span>
+                <span>RDAP boş</span>
                 <strong>{openDomainCount}</strong>
               </div>
               <div className="metric">
@@ -1701,6 +1706,7 @@ function App({ clerkEnabled = false }: AppProps) {
                   onClick={() => {
                     setLiveCandidates(null);
                     setDomainOverrides({});
+                    setDomainStatusText(DOMAIN_PENDING_TEXT);
                     setRound((value) => value + 1);
                   }}
                   type="button"
@@ -1845,7 +1851,7 @@ function App({ clerkEnabled = false }: AppProps) {
                 <strong>{Math.round(bestScore * 0.92)}</strong>
               </div>
               <div className="risk-item">
-                <span>Domain fırsatı</span>
+                <span>RDAP domain</span>
                 <strong>{Math.min(99, openDomainCount * 6)}</strong>
               </div>
               <div className="risk-item">
